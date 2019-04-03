@@ -2,7 +2,7 @@
 
 A Clojure repository of some REPL sessions that illustrate the why
 evaluating individual forms is not a sufficient or sustainable
-practice for developing Clojure programs. Clojure's has many good
+practice for developing Clojure programs. Clojure has many good
 decisions, but how it iteratively maintains its environment is not
 conducive to evaluating individual forms for iteratively developing.
 
@@ -29,8 +29,9 @@ quality of HTTP, this repo is so named.
 
 This repository contains files intended to be representative of REPL
 interactions, as well as example based tests which automatically load
-these files and assert the expected post-conditions if evaluating
-individual forms at the REPL was sufficient for iterative development.
+these files and assert the expected pre- and post-conditions if
+evaluating individual forms at the REPL was sufficient for iterative
+development.
 
 ## Contributing
 
