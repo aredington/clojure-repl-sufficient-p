@@ -21,6 +21,10 @@
 
 (deftest redefining-multimethod-dispatch-fn
   (testing "Redefining a multimethod function's dispatch function should have use the new dispatch function."
-    (require 'clojure-repl-sufficient-p.defmulti)
-    (is (= {:animal :octopus :color :red} (into {} @(resolve 'clojure-repl-sufficient-p.defmulti/pre-iteration-result))))
-    (is (= {:plant :hydrangea :color :pink} (into {} @(resolve 'clojure-repl-sufficient-p.defmulti/post-iteration-result))))))
+    ;; cleanly tear down the namespace so it is reloadable ;)
+    (remove-ns 'clojure-repl-sufficient-p.defmulti)
+    (require 'clojure-repl-sufficient-p.defmulti :reload)
+    (is (= {:animal :octopus  :color :red}  @(resolve 'clojure-repl-sufficient-p.defmulti/pre-iteration-result)))
+    (is (= {:plant :hydrangea :color :pink} @(resolve 'clojure-repl-sufficient-p.defmulti/post-iteration-result)))
+    ;; clean up after ourselves
+    (remove-ns 'clojure-repl-sufficient-p.defmulti)))

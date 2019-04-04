@@ -6,16 +6,20 @@
   [octopus color]
   (assoc octopus :color color))
 
+(defmethod color-change nil
+  [_ _]
+  :default-implementation)
+
 (def pre-iteration-result (color-change {:animal :octopus :color :white} :red))
 
 (defmulti color-change (fn [x & _] (:or (:animal x)
                                         (:plant  x))))
 
-(try
-  (def post-iteration-result (color-change {:plant :hydrangea :color :blue} :pink))
-  (catch Exception e
-    (def post-iteration-result {:result :compilation-failure
-                                :exception e})))
+(defmethod color-change :hydrangea
+  [hydrangea color]
+  (assoc hydrangea :color color))
+
+(def post-iteration-result (color-change {:plant :hydrangea :color :blue} :pink))
 
 
 
