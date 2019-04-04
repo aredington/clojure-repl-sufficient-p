@@ -12,3 +12,9 @@
     (require 'clojure-repl-sufficient-p.defprotocol)
     (is (= {:arms 8 :hearts 3 :eyes 2 :beaks 1 :color :red} (into {} @(resolve 'clojure-repl-sufficient-p.defprotocol/pre-iteration-result))))
     (is (= {:arms 8 :hearts 3 :eyes 2 :beaks 1 :color :green :suckers 2240} (into {} @(resolve 'clojure-repl-sufficient-p.defprotocol/post-iteration-result))))))
+
+(deftest redefining-protocol
+  (testing "Redefining a protocol preserves the membership of types to that protocol."
+    (require 'clojure-repl-sufficient-p.defprotocol2)
+    (is (= {:arms 8 :hearts 3 :eyes 2 :beaks 1 :color :red} (into {} @(resolve 'clojure-repl-sufficient-p.defprotocol2/pre-iteration-result))))
+    (is (= {:arms 8 :hearts 3 :eyes 2 :beaks 1 :color :green} (into {} @(resolve 'clojure-repl-sufficient-p.defprotocol2/post-iteration-result))))))
