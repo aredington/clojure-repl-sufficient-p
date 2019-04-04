@@ -18,3 +18,9 @@
     (require 'clojure-repl-sufficient-p.defprotocol2)
     (is (= {:arms 8 :hearts 3 :eyes 2 :beaks 1 :color :red} (into {} @(resolve 'clojure-repl-sufficient-p.defprotocol2/pre-iteration-result))))
     (is (= {:arms 8 :hearts 3 :eyes 2 :beaks 1 :color :green} (into {} @(resolve 'clojure-repl-sufficient-p.defprotocol2/post-iteration-result))))))
+
+(deftest redefining-multimethod-dispatch-fn
+  (testing "Redefining a multimethod function's dispatch function should have use the new dispatch function."
+    (require 'clojure-repl-sufficient-p.defmulti)
+    (is (= {:animal :octopus :color :red} (into {} @(resolve 'clojure-repl-sufficient-p.defmulti/pre-iteration-result))))
+    (is (= {:plant :hydrangea :color :pink} (into {} @(resolve 'clojure-repl-sufficient-p.defmulti/post-iteration-result))))))
