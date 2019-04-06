@@ -186,3 +186,57 @@
     (is (= ["Woof" "Meow" "Pfsssssst!" "I don't know what sound that makes!"] @(resolve 'clojure-repl-sufficient-p.defmulti/pre-iteration-result-default)))
     (is (= ["Woof" "Meow" "Pfsssssst!" "I don't know what sound :kangaroo makes."] @(resolve 'clojure-repl-sufficient-p.defmulti/post-iteration-result-default)))
     (remove-ns 'clojure-repl-sufficient-p.defmulti)))
+
+;; Function composition
+
+;; Whenever a composite function is constructed by composing existing
+;; functions, the standard usage is to refer to the constituent
+;; functions as values. This takes the value of the constituent Vars
+;; at the time the composite is defined, ignoring future redefinition
+;; of those Vars.
+;;
+;; This is a common case in Clojure applications where simple
+;; reevaluation does not work, particularly in web apps using the
+;; "middleware" pattern. When all the definitions are in the same
+;; file, as in these trivial examples, it is easy to work around, but
+;; larger applications may have multiple layers of composition spread
+;; across many source files.
+;;
+;; The first two cases are easy to work around by referencing the
+;; constituent functions as literal Vars with #', but this requires
+;; some understanding of how Vars work.
+
+(deftest redefining-comp
+  (testing "Functions passed as arguments to `comp` will have their
+redefinitions used in the composite function"
+    (remove-ns 'clojure-repl-sufficient-p.comp)
+    (require 'clojure-repl-sufficient-p.comp :reload)
+    (is (= {:a "pre-iteration", :b "pre-iteration"}
+           @(resolve 'clojure-repl-sufficient-p.comp/pre-iteration-result)))
+    (is (= {:a "post-iteration", :b "post-iteration"}
+           @(resolve 'clojure-repl-sufficient-p.comp/post-iteration-result)))))
+
+(deftest redefining-wrapped-function
+  (testing "A function used as an argument to construct a composite
+function will have its redefinition used in the composite function"
+    (remove-ns 'clojure-repl-sufficient-p.wrapped)
+    (require 'clojure-repl-sufficient-p.wrapped :reload)
+    (is (= {:constituent "pre-iteration", :wrapper true}
+           @(resolve 'clojure-repl-sufficient-p.wrapped/pre-iteration-result)))
+    (is (= {:constituent "post-iteration", :wrapper true}
+           @(resolve 'clojure-repl-sufficient-p.wrapped/post-iteration-result)))))
+
+;; In this last case, it is the composite constructor which is being
+;; modified rather than the constituent functions. This is difficult
+;; to avoid without completely changing the way the composite is
+;; defined.
+
+(deftest redefining-wrapper-function
+  (testing "A function called to construct a composite function will
+have its redefinition used in the composite function"
+    (remove-ns 'clojure-repl-sufficient-p.wrapper)
+    (require 'clojure-repl-sufficient-p.wrapper :reload)
+    (is (= {:wrapper "pre-iteration", :constituent true}
+           @(resolve 'clojure-repl-sufficient-p.wrapper/pre-iteration-result)))
+    (is (= {:wrapper "post-iteration", :constituent true}
+           @(resolve 'clojure-repl-sufficient-p.wrapper/post-iteration-result)))))
