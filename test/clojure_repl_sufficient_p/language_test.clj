@@ -1,11 +1,55 @@
 (ns clojure-repl-sufficient-p.language-test
   (:require [clojure.test :refer :all]))
 
+;; Inline Functions
+
 (deftest redefining-inline
   (testing "An inlined function that gets redefined will have its redefinition used by its clients."
+    (remove-ns 'clojure-repl-sufficient-p.inlining)
     (require 'clojure-repl-sufficient-p.inlining)
     (is (= "baz-bar-foo-zot" @(resolve 'clojure-repl-sufficient-p.inlining/pre-iteration-result)))
-    (is (= "baz-bar-foo-zott" @(resolve 'clojure-repl-sufficient-p.inlining/post-iteration-result)))))
+    (is (= "baz-bar-foo-zott" @(resolve 'clojure-repl-sufficient-p.inlining/post-iteration-result)))
+    (remove-ns 'clojure-repl-sufficient-p.inlining)))
+
+;; Protocol / Record / Type / extend-protocol
+
+;; These cover the gamut of Clojure type and protocol definition, and
+;; the consequences of redefinition.  Reasoning about this it's
+;; important to consider the "things" to be preserved or destroyed,
+;; and cause for doing so. The "things" to be preserved are the
+;; intersections between Types and Protocols. For this discussion
+;; let's call these (big I) Implementations. The causes for doing so are what
+;; expressions evaluated by Clojure cause semantic evaluations to
+;; become or terminate their useful function, for this discussion
+;; we'll just call them (big E) Expressions.
+
+;; The expectation broadly consistent here is:
+;;
+;; - An Expression which is not the provenance of an Implementation
+;;   should not invalidate that Implementation when
+;;   redefined. (e.g. the 'rirp' test in this NS, which creates the
+;;   Implementation in a defrecord Expression, and the Implementation is
+;;   invalidated when the protocol is redefined)
+;;
+;; - An Expression which is the provenance of an Implementation should
+;;   destroy an Implementation if it is redefined without including
+;;   the Implementation.
+;;
+;; - extend-protocol for a given [Protocol, <Type or Record>] tuple
+;;   should be its own source of provenance, and redefining either the
+;;   subject protocol or subject record should not destroy the
+;;   Implementation, while re-evaluating any `extend-protocol`
+;;   Expression with the tuple should destroy Implementations.
+;;
+;; Providing these guarantees would not be free, so I think it's
+;; entirely fair to say that these expected behaviors ONLY can and
+;; will be satisfied when one of either the Protocol or the
+;; Type/Record defined with ^:redef or ^:dynamic (or similar,
+;; orthogonal) metadata. A requirement that BOTH possess it would be
+;; far less desirable as it prevents achieving iterative development
+;; on protocols / types that the developer has required through
+;; dependencies. We will happily redefine these tests to reflect the
+;; above with input from the Clojure team.
 
 (deftest rirt
   (testing "Defining a protocol, then implementing the protocol with a record, then redefining the record without the implementation should get rid of the protocol implementation."
@@ -110,26 +154,35 @@
 
 
 (deftest strp
-  (testing "Defining a protocol, then extending String to that protocol, then redefining the protocol should still implement the protocol."
+  (testing "Defining a protocol, then extending String to that protocol, then redefining the protocol, should leave String still implementing the protocol."
     (remove-ns 'clojure-repl-sufficient-p.defprotocol)
     (require 'clojure-repl-sufficient-p.defprotocol :reload)
     (let [m (resolve 'clojure-repl-sufficient-p.defprotocol/strp)]
       (is (= :before (m ""))))))
 
 (deftest sprp
-  (testing "Defining a protocol, then extending the protocol to String, then redefining the protocol should still implement the protocol."
+  (testing "Defining a protocol, then extending the protocol to String, then redefining the protocol, should leave String still implementing the protocol."
     (remove-ns 'clojure-repl-sufficient-p.defprotocol)
     (require 'clojure-repl-sufficient-p.defprotocol :reload)
     (let [m (resolve 'clojure-repl-sufficient-p.defprotocol/sprp)]
       (is (= :before (m ""))))))
 
+;; Multimethods
 
 (deftest redefining-multimethod-dispatch-fn
   (testing "Redefining a multimethod function's dispatch function should have use the new dispatch function."
     ;; cleanly tear down the namespace so it is reloadable ;)
     (remove-ns 'clojure-repl-sufficient-p.defmulti)
     (require 'clojure-repl-sufficient-p.defmulti :reload)
-    (is (= {:animal :octopus  :color :red}  @(resolve 'clojure-repl-sufficient-p.defmulti/pre-iteration-result)))
-    (is (= {:plant :hydrangea :color :pink} @(resolve 'clojure-repl-sufficient-p.defmulti/post-iteration-result)))
+    (is (= {:animal :octopus  :color :red}  @(resolve 'clojure-repl-sufficient-p.defmulti/pre-iteration-result-dispatch-fn)))
+    (is (= {:plant :hydrangea :color :pink} @(resolve 'clojure-repl-sufficient-p.defmulti/post-iteration-result-dispatch-fn)))
     ;; clean up after ourselves
+    (remove-ns 'clojure-repl-sufficient-p.defmulti)))
+
+(deftest redefining-multimethod-default-value
+  (testing "Redefining a multimethod function's default value should use the new dispatch function."
+    (remove-ns 'clojure-repl-sufficient-p.defmulti)
+    (require 'clojure-repl-sufficient-p.defmulti :reload)
+    (is (= ["Woof" "Meow" "Pfsssssst!" "I don't know what sound that makes!"] @(resolve 'clojure-repl-sufficient-p.defmulti/pre-iteration-result-default)))
+    (is (= ["Woof" "Meow" "Pfsssssst!" "I don't know what sound :kangaroo makes."] @(resolve 'clojure-repl-sufficient-p.defmulti/post-iteration-result-default)))
     (remove-ns 'clojure-repl-sufficient-p.defmulti)))
